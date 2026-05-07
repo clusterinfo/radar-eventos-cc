@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radar de Eventos 2026 – Córdoba Cluster</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --blue:#005596;
+  --blue-lt:#e8f0fb;
+  --intl:#5b9bd5;
+  --intl-bg:#deeaf9;
+  --natl:#4caf7d;
+  --natl-bg:#dff3e9;
+  --border:#e0e4ec;
+  --text:#1c2333;
+  --muted:#6b7280;
+  --surface:#ffffff;
+  --bg:#f4f6fa;
+  --shadow:0 1px 6px rgba(0,0,0,.08);
+}
+
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);font-size:13px}
+
+.shell{display:grid;grid-template-rows:52px 1fr 22px;height:100vh;padding:8px 14px 4px;gap:6px}
+
+/* HEADER */
+header{background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:var(--shadow)}
+.hd-left{display:flex;align-items:center;gap:12px}
+.hd-left img{height:28px;object-fit:contain}
+.hd-sep{width:1px;height:24px;background:var(--border)}
+.hd-title{font-family:'Poppins',sans-serif;font-size:.88rem;font-weight:700;color:var(--blue);line-height:1.15}
+.hd-title span{display:block;font-size:.65rem;font-weight:400;color:var(--muted)}
+.hd-hint{font-size:.65rem;color:var(--muted);display:flex;align-items:center;gap:5px}
+.hd-hint svg{opacity:.5}
+
+/* BODY */
+.body{display:grid;grid-template-columns:1fr 290px;gap:10px;min-height:0}
+
+/* CALENDAR */
+.cal-card{background:#fff;border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cal-month{font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;color:var(--text)}
+.cal-month span{color:var(--blue)}
+.nav-btn{background:none;border:1px solid var(--border);border-radius:7px;width:26px;height:26px;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:all .15s}
+.nav-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-lt)}
+.cal-inner{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.day-headers{display:grid;grid-template-columns:repeat(7,1fr);flex-shrink:0;border-bottom:1px solid var(--border)}
+.dh{text-align:center;padding:4px 0;font-size:.6rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.days-wrap{position:relative;flex:1;overflow:hidden}
+.days{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,1fr);height:100%}
+.dc{border-right:1px solid #edf0f5;border-bottom:1px solid #edf0f5;padding:3px 3px 2px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.dc:nth-child(7n){border-right:none}
+.dc.other .dn{color:#c9cdd8}
+.dc.today{background:#fff8e6}
+.dc.today .dn{color:#e67e22;font-weight:700}
+.dn{font-size:.6rem;font-weight:500;color:#9ca3af;line-height:1;margin-bottom:2px;flex-shrink:0}
+
+/* PILLS — Google Calendar spanning style */
+.pill{
+  font-size:.56rem;font-weight:500;border-radius:3px;
+  padding:1.5px 5px;margin:1px 0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:pointer;transition:filter .15s,opacity .15s;
+  color:#fff;line-height:1.55;flex-shrink:0;
+  /* spanning handled via JS absolute positioning */
+}
+.pill.intl{background:var(--intl)}
+.pill.natl{background:var(--natl)}
+.pill.dimmed{opacity:.18}
+.pill:hover{filter:brightness(1.08)}
+.pill a{color:inherit;text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill a:hover{text-decoration:underline}
+
+/* spanning pill layer sits on top of grid */
+.cal-pill-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+.days-wrap{position:relative;flex:1;overflow:hidden}
+.days{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,1fr);height:100%}
+
+/* spanning pill absolute */
+.span-pill{
+  position:absolute;
+  font-size:.56rem;font-weight:500;
+  border-radius:3px;padding:1.5px 5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:#fff;line-height:1.55;cursor:pointer;
+  pointer-events:all;
+  transition:filter .15s,opacity .15s;
+  box-sizing:border-box;
+}
+.span-pill.intl{background:var(--intl)}
+.span-pill.natl{background:var(--natl)}
+.span-pill.dimmed{opacity:.18}
+.span-pill:hover{filter:brightness(1.08)}
+.span-pill a{color:inherit;text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.span-pill a:hover{text-decoration:underline}
+
+/* TOOLTIP */
+.tip{position:fixed;background:#1c2333;color:#fff;padding:9px 13px;border-radius:9px;pointer-events:none;opacity:0;transition:opacity .12s;max-width:230px;z-index:999;box-shadow:0 6px 24px rgba(0,0,0,.25);line-height:1.4}
+.tip.show{opacity:1}
+.tip-name{font-size:.75rem;font-weight:600;color:#93c5fd;margin-bottom:3px}
+.tip-loc{font-size:.65rem;color:#9ca3af;margin-bottom:3px}
+.tip-desc{font-size:.67rem;color:#d1d5db}
+
+/* SIDEBAR */
+.right{display:flex;flex-direction:column;gap:7px;min-height:0}
+
+/* FILTER BOX */
+.filter-box{background:#fff;border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);flex-shrink:0}
+.box-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:8px}
+.legend{display:flex;gap:12px;margin-bottom:8px}
+.lbadge{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--muted);font-weight:500}
+.ldot{width:9px;height:9px;border-radius:2px}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.tag{border:1.5px solid var(--border);border-radius:20px;padding:4px 11px;font-size:.72rem;font-weight:500;cursor:pointer;background:#fff;color:#374151;transition:all .15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.tag:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-lt)}
+.tag.on.intl-tag{background:var(--intl);border-color:var(--intl);color:#fff}
+.tag.on.natl-tag{background:var(--natl);border-color:var(--natl);color:#fff}
+.tag.on:not(.intl-tag):not(.natl-tag){background:var(--blue);border-color:var(--blue);color:#fff}
+.tdot{width:6px;height:6px;border-radius:50%;display:inline-block}
+
+/* FIRE LEGEND */
+.fire-legend{background:#fffbeb;border-radius:9px;padding:6px 10px;border-left:3px solid #f59e0b;flex-shrink:0}
+.fire-legend strong{font-size:.65rem;color:#b45309;display:block;margin-bottom:2px}
+.fire-legend p{font-size:.62rem;color:#92400e;line-height:1.35}
+
+/* EVENT LIST */
+.elist-box{background:#fff;border-radius:12px;padding:9px 12px 6px;box-shadow:var(--shadow);flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.elist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0}
+.elist-title{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+.elist-count{font-size:.62rem;color:var(--blue);font-weight:600;background:var(--blue-lt);padding:1px 7px;border-radius:10px}
+.elist-scroll{overflow-y:auto;flex:1}
+.elist-scroll::-webkit-scrollbar{width:4px}
+.elist-scroll::-webkit-scrollbar-thumb{background:#dde2ee;border-radius:4px}
+
+.ei{display:flex;gap:7px;padding:5px 0;border-bottom:1px solid #f0f2f8;align-items:flex-start}
+.ei:last-child{border-bottom:none}
+.ei-bar{width:3px;border-radius:3px;flex-shrink:0;align-self:stretch;min-height:30px}
+.ei-bar.intl{background:var(--intl)}
+.ei-bar.natl{background:var(--natl)}
+.ei-body{flex:1;min-width:0}
+.ei-name{font-size:.7rem;font-weight:600;color:var(--text);text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ei-name:hover{color:var(--blue);text-decoration:underline}
+.ei-sub{font-size:.61rem;color:var(--muted);margin-top:1px}
+.ei-date{font-size:.59rem;color:var(--muted);margin-top:1px}
+.ei-badge{font-size:.55rem;font-weight:600;border-radius:10px;padding:1px 6px;flex-shrink:0;margin-top:2px;align-self:flex-start}
+.ei-badge.intl{background:var(--intl-bg);color:#1a4e8a}
+.ei-badge.natl{background:var(--natl-bg);color:#2d7a52}
+
+.empty{text-align:center;padding:16px 0;color:var(--muted);font-size:.74rem;line-height:1.5}
+
+footer{text-align:center;font-size:.58rem;color:#adb5bd}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div class="hd-left">
+    <img src="https://cordobacluster.com/wp-content/uploads/2023/09/Logo-CC-copia-1024x486.png" alt="Córdoba Cluster" onerror="this.style.display='none'">
+    <div class="hd-sep"></div>
+    <div class="hd-title">
+      Radar de Eventos 2026
+      <span>Agenda Nacional e Internacional del Cluster</span>
+    </div>
+  </div>
+  <div class="hd-hint">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    Pasá el mouse sobre un evento para ver detalles
+  </div>
+</header>
+
+<div class="body">
+
+  <!-- CALENDAR -->
+  <div class="cal-card">
+    <div class="cal-nav">
+      <button class="nav-btn" id="prev">&#8249;</button>
+      <div class="cal-month" id="calMonth"></div>
+      <button class="nav-btn" id="next">&#8250;</button>
+    </div>
+    <div class="cal-inner">
+      <div class="day-headers">
+        <div class="dh">Dom</div><div class="dh">Lun</div><div class="dh">Mar</div>
+        <div class="dh">Mié</div><div class="dh">Jue</div><div class="dh">Vie</div><div class="dh">Sáb</div>
+      </div>
+      <div class="days-wrap">
+        <div class="days" id="days"></div>
+        <div class="cal-pill-layer" id="pillLayer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="right">
+
+    <div class="filter-box">
+      <div class="box-title">🏷 Filtrar por Tags</div>
+      <div class="legend">
+        <div class="lbadge"><div class="ldot" style="background:var(--intl)"></div>Internacional</div>
+        <div class="lbadge"><div class="ldot" style="background:var(--natl)"></div>Nacional</div>
+      </div>
+      <div class="tags" id="tagsWrap"></div>
+    </div>
+
+    <div class="fire-legend">
+      <strong>🔥 Pabellón Argentino</strong>
+      <p>Indica que el evento cuenta con Pabellón Argentino o presencia institucional del Córdoba Cluster.</p>
+    </div>
+
+    <div class="elist-box">
+      <div class="elist-head">
+        <div class="elist-title" id="listTitle">Todos los eventos</div>
+        <div class="elist-count" id="listCount"></div>
+      </div>
+      <div class="elist-scroll" id="listScroll"></div>
+    </div>
+
+  </div>
+</div>
+
+<footer>© 2026 Córdoba Cluster · Agenda Internacional</footer>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+const EVENTS=[
+  {name:"Expoagro",country:"Argentina",city:"San Nicolás",start:"2026-03-10",end:"2026-03-13",tags:["Agro"],url:"https://www.expoagro.com.ar/",stand:false,scope:"Nacional",desc:"El evento más tradicional del agro; ideal para AgTech y ERPs."},
+  {name:"Foro de Ciudades Inteligentes",country:"Argentina",city:"Córdoba",start:"2026-05-14",end:"2026-05-15",tags:["GovTech"],url:"https://doctas.muni.gob.ar/",stand:false,scope:"Nacional",desc:"Modernización del estado y soluciones urbanas."},
+  {name:"Feria de Proveeduría Automotriz",country:"México",city:"Monterrey",start:"2026-05-27",end:"2026-05-28",tags:["Industria 4.0","Automotriz"],url:"https://proveeduriaautomotriz.com/",stand:true,scope:"Internacional",desc:"Nearshoring y proveeduría técnica."},
+  {name:"Money20/20 Europe",country:"Países Bajos",city:"Ámsterdam",start:"2026-06-02",end:"2026-06-04",tags:["FinTech"],url:"https://europe.money2020.com/",stand:false,scope:"Internacional",desc:"Referente global en banca y economía digital."},
+  {name:"Agroactiva",country:"Argentina",city:"Armstrong",start:"2026-06-03",end:"2026-06-06",tags:["Agro"],url:"https://agroactiva.com/",stand:true,scope:"Nacional",desc:"Mayor muestra agroindustrial del país."},
+  {name:"MICA",country:"Argentina",city:"Buenos Aires",start:"2026-06-04",end:"2026-06-07",tags:["Audiovisual"],url:"https://mica.cultura.gob.ar/",stand:false,scope:"Nacional",desc:"El mercado más grande de servicios creativos del país."},
+  {name:"Web Summit Rio",country:"Brasil",city:"Río de Janeiro",start:"2026-06-08",end:"2026-06-11",tags:["Startups","SaaS"],url:"https://rio.websummit.com/",stand:false,scope:"Internacional",desc:"Networking masivo en Latam."},
+  {name:"PropTech Latam Summit",country:"Argentina",city:"Buenos Aires",start:"2026-06-11",end:"2026-06-12",tags:["PropTech"],url:"https://proptechlatam.com/",stand:false,scope:"Nacional",desc:"Transformación digital del sector inmobiliario."},
+  {name:"BIO International Convention",country:"EEUU",city:"Boston",start:"2026-06-22",end:"2026-06-25",tags:["Healthtech"],url:"https://www.bio.org/",stand:false,scope:"Internacional",desc:"La mayor convención mundial de biotecnología."},
+  {name:"Expo Logisti-K",country:"Argentina",city:"Buenos Aires",start:"2026-08-11",end:"2026-08-13",tags:["Logística"],url:"https://www.expologisti-k.com.ar/",stand:false,scope:"Nacional",desc:"Soluciones tecnológicas para logística y supply chain."},
+  {name:"ExpoTécnica",country:"Argentina",city:"Buenos Aires",start:"2026-08-20",end:"2026-08-21",tags:["Energía"],url:"https://expotecnica.com.ar/",stand:false,scope:"Nacional",desc:"Congreso de tecnología para cooperativas y servicios."},
+  {name:"Argentina Mining",country:"Argentina",city:"Salta",start:"2026-08-26",end:"2026-08-28",tags:["Minería, Oil & Gas"],url:"https://www.argentinamining.com/",stand:false,scope:"Nacional",desc:"Encuentro clave para el sector del Litio y Cobre."},
+  {name:"Intersec Buenos Aires",country:"Argentina",city:"Buenos Aires",start:"2026-09-02",end:"2026-09-04",tags:["Seguridad","IoT"],url:"https://intersec-buenos-aires.ar.messefrankfurt.com/",stand:false,scope:"Nacional",desc:"Innovación en seguridad electrónica y digital."},
+  {name:"IFA Berlin",country:"Alemania",city:"Berlín",start:"2026-09-04",end:"2026-09-08",tags:["Deep Tech","Innovación"],url:"https://www.ifa-berlin.com/",stand:false,scope:"Internacional",desc:"Hardware y electrónica de punta."},
+  {name:"Expo Envase + Alimentek",country:"Argentina",city:"Buenos Aires",start:"2026-09-08",end:"2026-09-11",tags:["FoodTech"],url:"https://www.envase.org/",stand:false,scope:"Nacional",desc:"Automatización y software para plantas de alimentos."},
+  {name:"América Digital",country:"Chile",city:"Santiago",start:"2026-09-09",end:"2026-09-10",tags:["SaaS","FinTech"],url:"https://congreso.america-digital.com/",stand:false,scope:"Internacional",desc:"Hub regional para cerrar negocios."},
+  {name:"BPMO Mexico Business",country:"México",city:"CDMX",start:"2026-09-22",end:"2026-09-23",tags:["Industria 4.0","SaaS"],url:"https://mexicobusiness.events/",stand:false,scope:"Internacional",desc:"Venta de servicios de Software Factory."},
+  {name:"Mexico Summit",country:"México",city:"CDMX",start:"2026-09-22",end:"2026-09-24",tags:["Inversión"],url:"https://mexicobusiness.events/",stand:false,scope:"Internacional",desc:"Cumbre de líderes de negocios y tomadores de decisiones."},
+  {name:"Food Technology Summit",country:"México",city:"CDMX",start:"2026-09-23",end:"2026-09-24",tags:["FoodTech","Innovación"],url:"https://foodtechnologysummit.com/",stand:false,scope:"Internacional",desc:"Referente en innovación alimentaria para todo Latam."},
+  {name:"Future Food-Tech London",country:"Reino Unido",city:"Londres",start:"2026-09-24",end:"2026-09-25",tags:["FoodTech"],url:"https://www.futurefoodtechlondon.com/",stand:false,scope:"Internacional",desc:"Hub europeo para tecnologías de alimentos del futuro."},
+  {name:"ExpoMEDICAL",country:"Argentina",city:"Buenos Aires",start:"2026-09-24",end:"2026-09-26",tags:["Innovación","Healthtech"],url:"https://www.expomedical.com.ar/",stand:false,scope:"Nacional",desc:"Equipamiento y soluciones tecnológicas para la salud."},
+  {name:"Rio Innovation Week",country:"Brasil",city:"Río de Janeiro",start:"2026-10-01",end:"2026-10-04",tags:["Innovación"],url:"https://rioinnovationweek.com.br/",stand:false,scope:"Internacional",desc:"Mega cumbre de negocios y tecnología en Sudamérica."},
+  {name:"GITEX Global",country:"Emiratos Árabes",city:"Dubai",start:"2026-10-07",end:"2026-10-11",tags:["IA","Deep Tech"],url:"https://www.gitex.com/",stand:false,scope:"Internacional",desc:"Escala mundial y volumen de negocios."},
+  {name:"TechCrunch Disrupt",country:"EEUU",city:"San Francisco",start:"2026-10-13",end:"2026-10-15",tags:["Startups"],url:"https://techcrunch.com/events/tc-disrupt-2026/",stand:false,scope:"Internacional",desc:"Validación y búsqueda de inversión."},
+  {name:"Encuentro Argentino de Biotecnología",country:"Argentina",city:"Buenos Aires",start:"2026-10-14",end:"2026-10-15",tags:["Innovación"],url:"https://www.biotecnologia.org.ar/",stand:false,scope:"Nacional",desc:"Foro de negocios entre startups biotech e industria."},
+  {name:"Money20/20 USA",country:"EEUU",city:"Las Vegas",start:"2026-10-18",end:"2026-10-21",tags:["FinTech","SaaS"],url:"https://us.money2020.com/",stand:false,scope:"Internacional",desc:"Escalamiento y networking financiero en Norteamérica."},
+  {name:"TECWEEK (CABA)",country:"Argentina",city:"Buenos Aires",start:"2026-10-21",end:"2026-10-31",tags:["Ecosistema"],url:"https://www.tecweek.com.ar/",stand:false,scope:"Nacional",desc:"Semana de la tecnología y las industrias creativas."},
+  {name:"AOG Patagonia",country:"Argentina",city:"Neuquén",start:"2026-10-21",end:"2026-10-23",tags:["Energía","Minería, Oil & Gas"],url:"https://www.aogpatagonia.com.ar/",stand:false,scope:"Nacional",desc:"El epicentro de Vaca Muerta; clientes de alta escala."},
+  {name:"Argentina Fintech Forum",country:"Argentina",city:"Buenos Aires",start:"2026-10-27",end:"2026-10-28",tags:["FinTech","Blockchain"],url:"https://camarafintech.org/",stand:false,scope:"Nacional",desc:"El evento cumbre del ecosistema financiero digital."},
+  {name:"Caper Show",country:"Argentina",city:"Buenos Aires",start:"2026-10-27",end:"2026-10-29",tags:["Audiovisual"],url:"https://www.capershow.com.ar/",stand:false,scope:"Nacional",desc:"Tecnología de punta para la industria audiovisual."},
+  {name:"Hong Kong Fintech Week",country:"China",city:"Hong Kong",start:"2026-11-02",end:"2026-11-06",tags:["FinTech"],url:"https://www.fintechweek.hk/",stand:false,scope:"Internacional",desc:"Puerta a la economía digital asiática."},
+  {name:"Smart City Expo",country:"España",city:"Barcelona",start:"2026-11-03",end:"2026-11-05",tags:["GovTech","IoT"],url:"https://www.smartcityexpo.com/",stand:true,scope:"Internacional",desc:"Soluciones urbanas sustentables."},
+  {name:"SaaS NORTH",country:"Canadá",city:"Ottawa",start:"2026-11-04",end:"2026-11-05",tags:["SaaS"],url:"https://saasnorth.com/",stand:false,scope:"Internacional",desc:"Escalamiento en Norteamérica."},
+  {name:"Congreso de Salud Digital",country:"Argentina",city:"Buenos Aires",start:"2026-11-04",end:"2026-11-05",tags:["Healthtech"],url:"https://saluddigital.com.ar/",stand:false,scope:"Nacional",desc:"Interoperabilidad e IA aplicada a sistemas de salud."},
+  {name:"Web Summit Lisbon",country:"Portugal",city:"Lisboa",start:"2026-11-09",end:"2026-11-12",tags:["Startups","Ecosistema"],url:"https://websummit.com/",stand:true,scope:"Internacional",desc:"El hito mundial del networking."},
+  {name:"Córdoba Tech Week",country:"Argentina",city:"Córdoba",start:"2026-11-12",end:"2026-11-13",tags:["Ecosistema"],url:"https://cordobacluster.com/",stand:false,scope:"Nacional",desc:"Rondas B2B con delegaciones."},
+  {name:"Argen-China",country:"Argentina",city:"Buenos Aires",start:"2026-11-12",end:"2026-11-13",tags:["FoodTech"],url:"https://www.argenchina.org/",stand:false,scope:"Nacional",desc:"Rondas de exportación de alimentos y servicios a Asia."},
+  {name:"Singapore Fintech Fest",country:"Singapur",city:"Singapur",start:"2026-11-18",end:"2026-11-20",tags:["FinTech","SaaS"],url:"https://www.fintechfestival.sg/",stand:false,scope:"Internacional",desc:"El futuro de la economía digital."}
+];
+
+function pd(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
+function fmt(s,e){
+  const sd=pd(s),ed=pd(e);
+  const o={day:'numeric',month:'short'};
+  if(sameDay(sd,ed)) return sd.toLocaleDateString('es-AR',{...o,year:'numeric'});
+  if(sd.getMonth()===ed.getMonth()) return `${sd.getDate()}–${ed.getDate()} ${sd.toLocaleDateString('es-AR',{month:'short',year:'numeric'})}`;
+  return `${sd.toLocaleDateString('es-AR',o)} – ${ed.toLocaleDateString('es-AR',o)}, ${ed.getFullYear()}`;
+}
+
+const SCOPE_TAGS=['Internacional','Nacional'];
+const ALL_TAGS=[...new Set(EVENTS.flatMap(e=>e.tags))].sort();
+const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+let activeTags=new Set();
+let curYear=2026, curMonth=4;
+
+function buildTags(){
+  const w=document.getElementById('tagsWrap');
+  w.innerHTML='';
+  SCOPE_TAGS.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='tag '+(t==='Internacional'?'intl-tag':'natl-tag');
+    b.dataset.tag=t;
+    const dot=document.createElement('span');
+    dot.className='tdot';
+    dot.style.background=t==='Internacional'?'var(--intl)':'var(--natl)';
+    b.append(dot,document.createTextNode(t));
+    b.addEventListener('click',()=>{activeTags.has(t)?activeTags.delete(t):activeTags.add(t);b.classList.toggle('on');render()});
+    w.appendChild(b);
+  });
+  ALL_TAGS.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='tag';b.dataset.tag=t;b.textContent=t;
+    b.addEventListener('click',()=>{activeTags.has(t)?activeTags.delete(t):activeTags.add(t);b.classList.toggle('on');render()});
+    w.appendChild(b);
+  });
+}
+
+function filtered(){
+  if(!activeTags.size) return EVENTS;
+  return EVENTS.filter(ev=>{
+    for(const t of activeTags){
+      if(t==='Internacional'&&ev.scope==='Internacional') return true;
+      if(t==='Nacional'&&ev.scope==='Nacional') return true;
+      if(ev.tags.includes(t)) return true;
+    }
+    return false;
+  });
+}
+
+function renderCal(){
+  document.getElementById('calMonth').innerHTML=`${MONTHS[curMonth]} <span>${curYear}</span>`;
+  const grid=document.getElementById('days');
+  const layer=document.getElementById('pillLayer');
+  grid.innerHTML='';
+  layer.innerHTML='';
+
+  const firstDow=new Date(curYear,curMonth,1).getDay();
+  const daysInMo=new Date(curYear,curMonth+1,0).getDate();
+  const prevDays=new Date(curYear,curMonth,0).getDate();
+  const today=new Date();
+  const filt=new Set(filtered());
+  const hasFilter=activeTags.size>0;
+  const ROWS=6, COLS=7;
+
+  // Build cell date map: cellIndex → {day,mo,yr,other}
+  const cellDates=[];
+  for(let i=0;i<ROWS*COLS;i++){
+    let day,mo,yr,other=false;
+    if(i<firstDow){day=prevDays-firstDow+1+i;mo=curMonth-1;yr=curYear;if(mo<0){mo=11;yr--}other=true}
+    else if(i>=firstDow+daysInMo){day=i-firstDow-daysInMo+1;mo=curMonth+1;yr=curYear;if(mo>11){mo=0;yr++}other=true}
+    else{day=i-firstDow+1;mo=curMonth;yr=curYear}
+    cellDates.push({day,mo,yr,other,date:new Date(yr,mo,day)});
+  }
+
+  // Render background day cells
+  cellDates.forEach(({day,mo,yr,other,date},i)=>{
+    const cell=document.createElement('div');
+    cell.className='dc'+(other?' other':'');
+    if(!other&&yr===today.getFullYear()&&mo===today.getMonth()&&day===today.getDate()) cell.classList.add('today');
+    const dn=document.createElement('div');dn.className='dn';dn.textContent=day;cell.appendChild(dn);
+    grid.appendChild(cell);
+  });
+
+  // Spanning pills: assign each event to rows
+  // Track row slots per cell: rowSlots[cellIdx] = Set of used rows
+  const rowSlots=Array.from({length:ROWS*COLS},()=>new Set());
+
+  // Sort events by start then duration desc
+  const visibleEvs=[...EVENTS].sort((a,b)=>{
+    const diff=pd(a.start)-pd(b.start);
+    if(diff!==0) return diff;
+    return (pd(b.end)-pd(b.start))-(pd(a.end)-pd(a.start));
+  });
+
+  // Wait for DOM layout to measure cells
+  requestAnimationFrame(()=>{
+    const wrap=document.getElementById('pillLayer').parentElement;
+    const wrapRect=wrap.getBoundingClientRect();
+    const cells=grid.querySelectorAll('.dc');
+    if(!cells.length) return;
+
+    const cellW=wrapRect.width/COLS;
+    const cellH=wrapRect.height/ROWS;
+    const PILL_H=14; // px height of each pill row
+    const PILL_TOP_OFFSET=16; // leave room for day number
+    const PILL_GAP=2;
+
+    visibleEvs.forEach(ev=>{
+      const evStart=pd(ev.start);
+      const evEnd=pd(ev.end);
+      // find all cells this event covers within the 42-cell grid
+      const coveredCells=[];
+      cellDates.forEach(({date},i)=>{
+        if(date>=evStart&&date<=evEnd) coveredCells.push(i);
+      });
+      if(!coveredCells.length) return;
+
+      // Split into week segments (rows)
+      const segments=[];
+      let seg=[];
+      coveredCells.forEach((ci,idx)=>{
+        if(idx===0){seg.push(ci)}
+        else{
+          const prev=coveredCells[idx-1];
+          if(ci===prev+1 && Math.floor(ci/7)===Math.floor(prev/7)){seg.push(ci)}
+          else{segments.push(seg);seg=[ci]}
+        }
+      });
+      if(seg.length) segments.push(seg);
+
+      segments.forEach(seg=>{
+        // find first free row slot across all cells in segment
+        let row=0;
+        while(true){
+          const conflict=seg.some(ci=>rowSlots[ci].has(row));
+          if(!conflict) break;
+          row++;
+          if(row>8) return; // too many events
+        }
+        seg.forEach(ci=>rowSlots[ci].add(row));
+
+        // Position pill
+        const firstCI=seg[0];
+        const lastCI=seg[seg.length-1];
+        const gridRow=Math.floor(firstCI/7);
+        const colStart=firstCI%7;
+        const colEnd=lastCI%7;
+        const spanCols=colEnd-colStart+1;
+
+        const x=colStart*cellW+1;
+        const y=gridRow*cellH+PILL_TOP_OFFSET+row*(PILL_H+PILL_GAP);
+        const w=spanCols*cellW-3;
+
+        const pill=document.createElement('div');
+        pill.className='span-pill '+(ev.scope==='Internacional'?'intl':'natl');
+        if(hasFilter&&!filt.has(ev)) pill.classList.add('dimmed');
+        pill.style.left=x+'px';
+        pill.style.top=y+'px';
+        pill.style.width=w+'px';
+        pill.style.height=PILL_H+'px';
+
+        const isFirstSeg=segments.indexOf(seg)===0;
+        const label=(ev.stand?'🔥 ':'')+ev.name;
+
+        if(isFirstSeg){
+          const a=document.createElement('a');
+          a.href=ev.url;a.target='_blank';a.rel='noopener';a.textContent=label;
+          pill.appendChild(a);
+        } else {
+          // continuation — show arrow + name clipped
+          const a=document.createElement('a');
+          a.href=ev.url;a.target='_blank';a.rel='noopener';a.textContent='↳ '+ev.name;
+          pill.appendChild(a);
+        }
+
+        pill.addEventListener('mouseenter',e=>showTip(ev,e));
+        pill.addEventListener('mousemove',moveTip);
+        pill.addEventListener('mouseleave',hideTip);
+        layer.appendChild(pill);
+      });
+    });
+  });
+}
+
+const tip=document.getElementById('tip');
+function showTip(ev,e){
+  tip.innerHTML=`<div class="tip-name">${ev.stand?'🔥 ':''}${ev.name}</div><div class="tip-loc">📍 ${ev.city}, ${ev.country} · ${ev.scope}</div><div class="tip-desc">${ev.desc}</div>`;
+  tip.classList.add('show');moveTip(e);
+}
+function moveTip(e){
+  let x=e.clientX+14,y=e.clientY-10;
+  if(x+240>window.innerWidth)x=e.clientX-250;
+  if(y+100>window.innerHeight)y=e.clientY-100;
+  tip.style.left=x+'px';tip.style.top=y+'px';
+}
+function hideTip(){tip.classList.remove('show')}
+
+function renderList(){
+  const f=filtered();
+  document.getElementById('listTitle').textContent=activeTags.size?'Eventos filtrados':'Todos los eventos';
+  document.getElementById('listCount').textContent=f.length;
+  const scroll=document.getElementById('listScroll');
+  scroll.innerHTML='';
+  if(!f.length){scroll.innerHTML='<div class="empty">Sin eventos para los filtros seleccionados.</div>';return}
+  f.forEach(ev=>{
+    const cls=ev.scope==='Internacional'?'intl':'natl';
+    const d=document.createElement('div');d.className='ei';
+    d.innerHTML=`
+      <div class="ei-bar ${cls}"></div>
+      <div class="ei-body">
+        <a class="ei-name" href="${ev.url}" target="_blank" rel="noopener">${ev.stand?'🔥 ':''}${ev.name}</a>
+        <div class="ei-sub">📍 ${ev.city}, ${ev.country}</div>
+        <div class="ei-date">🗓 ${fmt(ev.start,ev.end)}</div>
+      </div>
+      <span class="ei-badge ${cls}">${ev.scope}</span>`;
+    scroll.appendChild(d);
+  });
+}
+
+function render(){renderCal();renderList()}
+
+document.getElementById('prev').addEventListener('click',()=>{curMonth--;if(curMonth<0){curMonth=11;curYear--}render()});
+document.getElementById('next').addEventListener('click',()=>{curMonth++;if(curMonth>11){curMonth=0;curYear++}render()});
+
+buildTags();render();
+</script>
+</body>
+</html>
